@@ -1,5 +1,7 @@
 # Nextcloud MCP Server
 
+[![smithery badge](https://smithery.ai/badge/@hithereiamaliff/mcp-nextcloud)](https://smithery.ai/server/@hithereiamaliff/mcp-nextcloud)
+
 **MCP Endpoint:** `https://mcp.techmavie.digital/nextcloud/mcp`
 
 **Analytics Dashboard:** [`https://mcp.techmavie.digital/nextcloud/analytics/dashboard`](https://mcp.techmavie.digital/nextcloud/analytics/dashboard)
