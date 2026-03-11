@@ -28,6 +28,7 @@ import { registerCalendarDebugTools } from './tools/calendar-debug.tools.js';
 import { registerContactsTools } from './tools/contacts.tools.js';
 import { registerTablesTools } from './tools/tables.tools.js';
 import { registerWebDAVTools } from './tools/webdav.tools.js';
+import { registerDeckTools } from './tools/deck.tools.js';
 import { prefixToolName } from './utils/tool-naming.js';
 
 // Type definition for tool registration functions
@@ -176,6 +177,7 @@ const toolSets: ToolRegistrationFn[] = [
   registerContactsTools,
   registerTablesTools,
   registerWebDAVTools,
+  registerDeckTools,
 ];
 
 // Register all tools
