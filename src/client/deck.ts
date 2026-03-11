@@ -78,10 +78,24 @@ export class DeckClient extends BaseNextcloudClient {
       archived?: boolean;
     }
   ): Promise<Card> {
+    // Deck API PUT replaces all fields and requires owner/type/order.
+    // Fetch the current card first, then merge the caller's changes.
+    const current = await this.getCard(boardId, stackId, cardId);
+    const data = {
+      title: current.title,
+      type: current.type ?? 'plain',
+      order: current.order ?? 0,
+      owner: current.owner?.uid ?? current.owner?.primaryKey,
+      description: current.description ?? '',
+      duedate: current.duedate,
+      done: current.done,
+      archived: current.archived,
+      ...fields,
+    };
     return this.makeRequest<Card>({
       method: 'PUT',
       url: `${DECK_API}/boards/${boardId}/stacks/${stackId}/cards/${cardId}`,
-      data: fields,
+      data,
     });
   }
 
