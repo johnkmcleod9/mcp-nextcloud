@@ -5,6 +5,7 @@ import {
   Card,
   DeckComment,
   SearchResult,
+  Attachment,
 } from '../models/deck.js';
 
 const DECK_API = '/index.php/apps/deck/api/v1.0';
@@ -196,5 +197,52 @@ export class DeckClient extends BaseNextcloudClient {
     }
 
     return results;
+  }
+
+  // ─── Attachments ───
+
+  async listAttachments(
+    boardId: number,
+    stackId: number,
+    cardId: number
+  ): Promise<Attachment[]> {
+    return this.makeRequest<Attachment[]>({
+      method: 'GET',
+      url: `${DECK_API}/boards/${boardId}/stacks/${stackId}/cards/${cardId}/attachments`,
+    });
+  }
+
+  async addAttachment(
+    boardId: number,
+    stackId: number,
+    cardId: number,
+    fileData: Buffer,
+    fileName: string
+  ): Promise<Attachment> {
+    // Attachments require multipart/form-data — use axios directly
+    const FormData = (await import('form-data')).default;
+    const form = new FormData();
+    form.append('file', fileData, { filename: fileName });
+    form.append('type', 'file');
+
+    const response = await this.client.post(
+      `${DECK_API}/boards/${boardId}/stacks/${stackId}/cards/${cardId}/attachments`,
+      form,
+      { headers: form.getHeaders() }
+    );
+    return response.data;
+  }
+
+  async getAttachment(
+    boardId: number,
+    stackId: number,
+    cardId: number,
+    attachmentId: number
+  ): Promise<Buffer> {
+    const response = await this.client.get(
+      `${DECK_API}/boards/${boardId}/stacks/${stackId}/cards/${cardId}/attachments/${attachmentId}`,
+      { responseType: 'arraybuffer' }
+    );
+    return Buffer.from(response.data);
   }
 }
