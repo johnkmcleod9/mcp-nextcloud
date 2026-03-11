@@ -3,12 +3,14 @@ import { CalendarClient } from '../client/calendar.js';
 import { ContactsClient } from '../client/contacts.js';
 import { TablesClient } from '../client/tables.js';
 import { WebDAVClient } from '../client/webdav.js';
+import { DeckClient } from '../client/deck.js';
 
 let notesClient: NotesClient | undefined;
 let calendarClient: CalendarClient | undefined;
 let contactsClient: ContactsClient | undefined;
 let tablesClient: TablesClient | undefined;
 let webDAVClient: WebDAVClient | undefined;
+let deckClient: DeckClient | undefined;
 
 let credentials: { host: string; username: string; password: string } | undefined;
 
@@ -20,6 +22,7 @@ export function setCredentials(host: string, username: string, password: string)
   contactsClient = undefined;
   tablesClient = undefined;
   webDAVClient = undefined;
+  deckClient = undefined;
 }
 
 // For backward compatibility
@@ -53,6 +56,7 @@ function ensureClientsInitialized() {
     contactsClient = new ContactsClient(credentials.host, credentials.username, credentials.password);
     tablesClient = new TablesClient(credentials.host, credentials.username, credentials.password);
     webDAVClient = new WebDAVClient(credentials.host, credentials.username, credentials.password);
+    deckClient = new DeckClient(credentials.host, credentials.username, credentials.password);
   }
 }
 
@@ -73,6 +77,9 @@ export function getClient<T>(client: new (...args: any[]) => T): T {
   }
   if (client === WebDAVClient) {
     return webDAVClient as any;
+  }
+  if (client === DeckClient) {
+    return deckClient as any;
   }
   throw new Error(`Unknown client type: ${client}`);
 }
