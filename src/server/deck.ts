@@ -166,13 +166,19 @@ export async function handleMoveCard(
   order: number
 ) {
   const client = getClient(DeckClient);
-  const card = await client.moveCard(board_id, stack_id, card_id, new_stack_id, order);
+  const cards = await client.moveCard(board_id, stack_id, card_id, new_stack_id, order);
+  const moved = cards.find((c) => c.id === card_id);
   return {
     content: [
       {
         type: 'text' as const,
         text: JSON.stringify(
-          { id: card.id, title: card.title, stackId: card.stackId, order: card.order },
+          {
+            id: moved?.id ?? card_id,
+            title: moved?.title,
+            stackId: moved?.stackId ?? new_stack_id,
+            order: moved?.order ?? order,
+          },
           null,
           2
         ),

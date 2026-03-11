@@ -105,11 +105,14 @@ export class DeckClient extends BaseNextcloudClient {
     cardId: number,
     newStackId: number,
     order: number
-  ): Promise<Card> {
-    return this.makeRequest<Card>({
+  ): Promise<Card[]> {
+    // The reorder endpoint reads stackId from the URL path, not the body.
+    // Use the target stack ID in the URL to move the card.
+    // Returns an array of cards from the affected stacks.
+    return this.makeRequest<Card[]>({
       method: 'PUT',
-      url: `${DECK_API}/boards/${boardId}/stacks/${stackId}/cards/${cardId}/reorder`,
-      data: { stackId: newStackId, order },
+      url: `${DECK_API}/boards/${boardId}/stacks/${newStackId}/cards/${cardId}/reorder`,
+      data: { order },
     });
   }
 
