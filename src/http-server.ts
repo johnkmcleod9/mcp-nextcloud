@@ -30,6 +30,66 @@ import { registerTablesTools } from './tools/tables.tools.js';
 import { registerWebDAVTools } from './tools/webdav.tools.js';
 import { registerDeckTools } from './tools/deck.tools.js';
 import { prefixToolName } from './utils/tool-naming.js';
+import crypto from 'crypto';
+
+// Auth configuration
+const AUTH_TOKENS: string[] = process.env.MCP_AUTH_TOKEN
+  ? process.env.MCP_AUTH_TOKEN.split(',').map(t => t.trim()).filter(Boolean)
+  : [];
+const AUTH_ENABLED = AUTH_TOKENS.length > 0;
+const AUTH_BYPASS_PRIVATE = process.env.MCP_AUTH_BYPASS_PRIVATE !== 'false'; // default true
+
+// Bearer token authentication middleware
+function requireAuth(req: Request, res: Response, next: () => void): void {
+  // If auth is not configured, allow all requests
+  if (!AUTH_ENABLED) {
+    next();
+    return;
+  }
+
+  // If private bypass is enabled and request has no X-Forwarded-For,
+  // it came directly on the Docker network (not through Traefik)
+  if (AUTH_BYPASS_PRIVATE && !req.headers['x-forwarded-for']) {
+    next();
+    return;
+  }
+
+  // Extract bearer token
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.ip || 'unknown';
+    console.warn(`🔒 Auth failed: missing token from ${clientIp} at ${new Date().toISOString()}`);
+    res.status(401).json({
+      jsonrpc: '2.0',
+      error: { code: -32600, message: 'Unauthorized: invalid or missing bearer token' },
+      id: null,
+    });
+    return;
+  }
+
+  const token = authHeader.substring(7); // Remove 'Bearer '
+  const tokenBuffer = Buffer.from(token);
+
+  // Check against all valid tokens using timing-safe comparison
+  const isValid = AUTH_TOKENS.some(validToken => {
+    const validBuffer = Buffer.from(validToken);
+    if (tokenBuffer.length !== validBuffer.length) return false;
+    return crypto.timingSafeEqual(tokenBuffer, validBuffer);
+  });
+
+  if (!isValid) {
+    const clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.ip || 'unknown';
+    console.warn(`🔒 Auth failed: invalid token from ${clientIp} at ${new Date().toISOString()}`);
+    res.status(401).json({
+      jsonrpc: '2.0',
+      error: { code: -32600, message: 'Unauthorized: invalid or missing bearer token' },
+      id: null,
+    });
+    return;
+  }
+
+  next();
+}
 
 // Type definition for tool registration functions
 type ToolRegistrationFn = (server: McpServer) => void;
@@ -159,11 +219,12 @@ const mcpServer = new McpServer({
 
 // Initialize credentials from environment or query params
 function initializeCredentials(req?: Request): void {
-  // Check for query params first (user-provided)
-  const host = req?.query.nextcloudHost as string || process.env.NEXTCLOUD_HOST;
-  const username = req?.query.nextcloudUsername as string || process.env.NEXTCLOUD_USERNAME;
-  const password = req?.query.nextcloudPassword as string || process.env.NEXTCLOUD_PASSWORD;
-  
+  // When auth is enabled, credentials come exclusively from env vars.
+  // This prevents a valid token holder from redirecting to a different Nextcloud instance.
+  const host = (!AUTH_ENABLED ? req?.query.nextcloudHost as string : undefined) || process.env.NEXTCLOUD_HOST;
+  const username = (!AUTH_ENABLED ? req?.query.nextcloudUsername as string : undefined) || process.env.NEXTCLOUD_USERNAME;
+  const password = (!AUTH_ENABLED ? req?.query.nextcloudPassword as string : undefined) || process.env.NEXTCLOUD_PASSWORD;
+
   if (host && username && password) {
     setCredentials(host, username, password);
   }
@@ -225,6 +286,9 @@ app.use(cors({
 
 app.use(express.json());
 
+// Trust proxy headers when behind Traefik so req.ip reflects the real client
+app.set('trust proxy', 'loopback,linklocal,uniquelocal');
+
 // Health check endpoint
 app.get('/health', (req: Request, res: Response) => {
   trackRequest(req, '/health');
@@ -238,7 +302,7 @@ app.get('/health', (req: Request, res: Response) => {
 });
 
 // Analytics endpoint - summary
-app.get('/analytics', (req: Request, res: Response) => {
+app.get('/analytics', requireAuth, (req: Request, res: Response) => {
   trackRequest(req, '/analytics');
   
   const sortedTools = Object.entries(analytics.toolCalls)
@@ -565,7 +629,7 @@ const transport = new StreamableHTTPServerTransport({
 });
 
 // MCP endpoint
-app.all('/mcp', async (req: Request, res: Response) => {
+app.all('/mcp', requireAuth, async (req: Request, res: Response) => {
   trackRequest(req, '/mcp');
   
   // Initialize credentials from query params or env
