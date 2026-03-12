@@ -33,6 +33,19 @@ export async function handleGetBoard(board_id: number) {
   };
 }
 
+export async function handleDeleteBoard(board_id: number) {
+  const client = getClient(DeckClient);
+  const board = await client.deleteBoard(board_id);
+  return {
+    content: [
+      {
+        type: 'text' as const,
+        text: JSON.stringify({ id: board.id, title: board.title, status: 'deleted' }, null, 2),
+      },
+    ],
+  };
+}
+
 export async function handleCreateBoard(
   title: string,
   color: string,

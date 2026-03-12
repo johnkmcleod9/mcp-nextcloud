@@ -4,6 +4,7 @@ import { prefixToolName } from '../utils/tool-naming.js';
 import {
   handleListBoards,
   handleGetBoard,
+  handleDeleteBoard,
   handleCreateBoard,
   handleListStacks,
   handleCreateStack,
@@ -38,6 +39,15 @@ export function registerDeckTools(server: McpServer): void {
       board_id: z.number().describe('The ID of the board'),
     },
     async ({ board_id }) => handleGetBoard(board_id)
+  );
+
+  server.tool(
+    prefixToolName('deck_delete_board'),
+    'Delete a Deck board (soft-delete). Only the board owner can delete it.',
+    {
+      board_id: z.number().describe('The ID of the board to delete'),
+    },
+    async ({ board_id }) => handleDeleteBoard(board_id)
   );
 
   server.tool(
