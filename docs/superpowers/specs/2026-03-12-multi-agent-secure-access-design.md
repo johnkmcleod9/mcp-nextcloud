@@ -46,7 +46,7 @@ Add auth middleware to `http-server.ts` that validates bearer tokens on the `/mc
 | Variable | Default | Description |
 |---|---|---|
 | `MCP_AUTH_TOKEN` | (unset) | Comma-separated list of valid bearer tokens. If unset, auth is disabled. |
-| `MCP_AUTH_BYPASS_PRIVATE` | `true` | Skip auth for requests from private IPs (172.x, 10.x, 192.168.x). |
+| `MCP_AUTH_BYPASS_PRIVATE` | `true` | Skip auth for direct requests (no X-Forwarded-For header, i.e., Docker network). |
 
 **Express trust proxy configuration:**
 
