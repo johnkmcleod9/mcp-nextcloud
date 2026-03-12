@@ -74,6 +74,7 @@ export interface Label {
 }
 
 export interface Acl {
+  id: number;
   participant: {
     primaryKey: string;
     uid: string;
@@ -84,6 +85,7 @@ export interface Acl {
   permissionEdit: boolean;
   permissionShare: boolean;
   permissionManage: boolean;
+  owner: boolean;
 }
 
 export interface BoardUser {

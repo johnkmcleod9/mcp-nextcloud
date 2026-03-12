@@ -40,7 +40,42 @@ export async function handleCreateBoard(title: string, color: string) {
     content: [
       {
         type: 'text' as const,
-        text: JSON.stringify({ id: board.id, title: board.title, color: board.color }, null, 2),
+        text: JSON.stringify(
+          { id: board.id, title: board.title, color: board.color, shared_with: 'AI Agents group' },
+          null,
+          2
+        ),
+      },
+    ],
+  };
+}
+
+export async function handleShareBoard(
+  board_id: number,
+  participant: string,
+  type: number,
+  permission_edit: boolean,
+  permission_share: boolean,
+  permission_manage: boolean
+) {
+  const client = getClient(DeckClient);
+  const acl = await client.shareBoard(board_id, participant, type, permission_edit, permission_share, permission_manage);
+  return {
+    content: [
+      {
+        type: 'text' as const,
+        text: JSON.stringify(
+          {
+            aclId: acl.id,
+            participant: acl.participant?.displayname ?? participant,
+            type: type === 0 ? 'user' : 'group',
+            permissionEdit: acl.permissionEdit,
+            permissionShare: acl.permissionShare,
+            permissionManage: acl.permissionManage,
+          },
+          null,
+          2
+        ),
       },
     ],
   };

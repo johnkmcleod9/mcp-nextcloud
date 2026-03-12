@@ -18,6 +18,7 @@ import {
   handleListAttachments,
   handleAddAttachment,
   handleGetAttachment,
+  handleShareBoard,
 } from '../server/deck.js';
 
 export function registerDeckTools(server: McpServer): void {
@@ -41,12 +42,27 @@ export function registerDeckTools(server: McpServer): void {
 
   server.tool(
     prefixToolName('deck_create_board'),
-    'Create a new Deck board',
+    'Create a new Deck board. Automatically shared with the AI Agents group.',
     {
       title: z.string().describe('Title of the board'),
       color: z.string().describe('Hex color code without # (e.g., "0087C5")'),
     },
     async ({ title, color }) => handleCreateBoard(title, color)
+  );
+
+  server.tool(
+    prefixToolName('deck_share_board'),
+    'Share a Deck board with a user or group. Type 0 = user, type 1 = group.',
+    {
+      board_id: z.number().describe('The ID of the board'),
+      participant: z.string().describe('Username or group name to share with'),
+      type: z.number().describe('0 for user, 1 for group'),
+      permission_edit: z.boolean().optional().default(true).describe('Allow editing'),
+      permission_share: z.boolean().optional().default(true).describe('Allow re-sharing'),
+      permission_manage: z.boolean().optional().default(false).describe('Allow managing board settings'),
+    },
+    async ({ board_id, participant, type, permission_edit, permission_share, permission_manage }) =>
+      handleShareBoard(board_id, participant, type, permission_edit, permission_share, permission_manage)
   );
 
   // ─── Stacks ───

@@ -1,5 +1,6 @@
 import { BaseNextcloudClient } from './base.js';
 import {
+  Acl,
   Board,
   Stack,
   Card,
@@ -25,7 +26,36 @@ export class DeckClient extends BaseNextcloudClient {
   }
 
   async createBoard(title: string, color: string): Promise<Board> {
-    return this.makeRequest<Board>({ method: 'POST', url: `${DECK_API}/boards`, data: { title, color } });
+    const board = await this.makeRequest<Board>({ method: 'POST', url: `${DECK_API}/boards`, data: { title, color } });
+    // Auto-share with the AI Agents group so all members can see the board
+    try {
+      await this.shareBoard(board.id, 'AI Agents', 1);
+    } catch {
+      // Non-fatal: board was created, sharing just failed
+    }
+    return board;
+  }
+
+  async shareBoard(
+    boardId: number,
+    participant: string,
+    type: number,
+    permissionEdit = true,
+    permissionShare = true,
+    permissionManage = false
+  ): Promise<Acl> {
+    return this.makeRequest<Acl>({
+      method: 'POST',
+      url: `${DECK_API}/boards/${boardId}/acl`,
+      data: { type, participant, permissionEdit, permissionShare, permissionManage },
+    });
+  }
+
+  async unshareBoard(boardId: number, aclId: number): Promise<void> {
+    await this.makeRequest<void>({
+      method: 'DELETE',
+      url: `${DECK_API}/boards/${boardId}/acl/${aclId}`,
+    });
   }
 
   // ─── Stacks ───
