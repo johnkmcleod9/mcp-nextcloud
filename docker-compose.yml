@@ -1,40 +1,64 @@
-# Nextcloud MCP Server - Docker Compose
-# For self-hosting on VPS at mcp.techmavie.digital/nextcloud
+x-mcp-base: &mcp-base
+  image: mcp-nextcloud:latest
+  build: .
+  restart: unless-stopped
+  networks: [proxy, nextcloud-aio]
+  healthcheck:
+    test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+    interval: 30s
+    timeout: 10s
+    retries: 3
+    start_period: 10s
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
 
 services:
-  mcp-nextcloud:
-    build: .
-    container_name: mcp-nextcloud
-    restart: unless-stopped
-    ports:
-      - "8085:8080"
+  mcp-nc-assistant:
+    <<: *mcp-base
+    container_name: mcp-nc-assistant
     environment:
-      - PORT=8080
-      - HOST=0.0.0.0
-      - NEXTCLOUD_HOST=${NEXTCLOUD_HOST:-}
-      - NEXTCLOUD_USERNAME=${NEXTCLOUD_USERNAME:-}
-      - NEXTCLOUD_PASSWORD=${NEXTCLOUD_PASSWORD:-}
-      - NODE_ENV=production
-      - ANALYTICS_FILE=/app/data/analytics.json
+      - NEXTCLOUD_HOST=http://nextcloud-aio-apache:11000
+      - NEXTCLOUD_USERNAME=ai-assistant
+      - NEXTCLOUD_PASSWORD=${ASSISTANT_PASSWORD}
+      - MCP_AUTH_TOKEN=${CLIENT_AUTH_TOKENS}
+      - MCP_AUTH_BYPASS_PRIVATE=true
     volumes:
-      - analytics-data:/app/data
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-    networks:
-      - mcp-network
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+      - analytics-assistant:/app/data
 
-networks:
-  mcp-network:
-    driver: bridge
+  mcp-nc-marketing:
+    <<: *mcp-base
+    container_name: mcp-nc-marketing
+    environment:
+      - NEXTCLOUD_HOST=http://nextcloud-aio-apache:11000
+      - NEXTCLOUD_USERNAME=ai-marketing
+      - NEXTCLOUD_PASSWORD=${MARKETING_PASSWORD}
+      - MCP_AUTH_TOKEN=${CLIENT_AUTH_TOKENS}
+      - MCP_AUTH_BYPASS_PRIVATE=true
+    volumes:
+      - analytics-marketing:/app/data
+
+  mcp-nc-finance:
+    <<: *mcp-base
+    container_name: mcp-nc-finance
+    environment:
+      - NEXTCLOUD_HOST=http://nextcloud-aio-apache:11000
+      - NEXTCLOUD_USERNAME=ai-finance
+      - NEXTCLOUD_PASSWORD=${FINANCE_PASSWORD}
+      - MCP_AUTH_TOKEN=${CLIENT_AUTH_TOKENS}
+      - MCP_AUTH_BYPASS_PRIVATE=true
+    volumes:
+      - analytics-finance:/app/data
 
 volumes:
-  analytics-data:
+  analytics-assistant:
+  analytics-marketing:
+  analytics-finance:
+
+networks:
+  proxy:
+    external: true
+  nextcloud-aio:
+    external: true
