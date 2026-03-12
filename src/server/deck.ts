@@ -33,15 +33,43 @@ export async function handleGetBoard(board_id: number) {
   };
 }
 
-export async function handleCreateBoard(title: string, color: string) {
+export async function handleCreateBoard(
+  title: string,
+  color: string,
+  shareWithUsers?: string[],
+  shareWithGroups?: string[]
+) {
   const client = getClient(DeckClient);
   const board = await client.createBoard(title, color);
+
+  const sharedWith: string[] = ['AI Agents group'];
+
+  // Share with additional users (type 0)
+  if (shareWithUsers) {
+    for (const user of shareWithUsers) {
+      try {
+        await client.shareBoard(board.id, user, 0);
+        sharedWith.push(user);
+      } catch { /* non-fatal */ }
+    }
+  }
+
+  // Share with additional groups (type 1)
+  if (shareWithGroups) {
+    for (const group of shareWithGroups) {
+      try {
+        await client.shareBoard(board.id, group, 1);
+        sharedWith.push(`${group} group`);
+      } catch { /* non-fatal */ }
+    }
+  }
+
   return {
     content: [
       {
         type: 'text' as const,
         text: JSON.stringify(
-          { id: board.id, title: board.title, color: board.color, shared_with: 'AI Agents group' },
+          { id: board.id, title: board.title, color: board.color, shared_with: sharedWith },
           null,
           2
         ),

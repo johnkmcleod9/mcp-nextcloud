@@ -42,12 +42,15 @@ export function registerDeckTools(server: McpServer): void {
 
   server.tool(
     prefixToolName('deck_create_board'),
-    'Create a new Deck board. Automatically shared with the AI Agents group.',
+    'Create a new Deck board. Automatically shared with the AI Agents group. Optionally share with additional users or groups so they can see the board and be assigned to cards.',
     {
       title: z.string().describe('Title of the board'),
       color: z.string().describe('Hex color code without # (e.g., "0087C5")'),
+      share_with_users: z.array(z.string()).optional().describe('Additional Nextcloud usernames to share the board with'),
+      share_with_groups: z.array(z.string()).optional().describe('Additional Nextcloud group names to share the board with (e.g., "Employee", "Contractor")'),
     },
-    async ({ title, color }) => handleCreateBoard(title, color)
+    async ({ title, color, share_with_users, share_with_groups }) =>
+      handleCreateBoard(title, color, share_with_users, share_with_groups)
   );
 
   server.tool(
