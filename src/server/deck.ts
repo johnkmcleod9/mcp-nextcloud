@@ -46,6 +46,23 @@ export async function handleDeleteBoard(board_id: number) {
   };
 }
 
+export async function handleArchiveBoard(board_id: number, archived: boolean) {
+  const client = getClient(DeckClient);
+  const board = await client.archiveBoard(board_id, archived);
+  return {
+    content: [
+      {
+        type: 'text' as const,
+        text: JSON.stringify(
+          { id: board.id, title: board.title, archived: board.archived },
+          null,
+          2
+        ),
+      },
+    ],
+  };
+}
+
 export async function handleCreateBoard(
   title: string,
   color: string,

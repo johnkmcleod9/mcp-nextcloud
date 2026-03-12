@@ -5,6 +5,7 @@ import {
   handleListBoards,
   handleGetBoard,
   handleDeleteBoard,
+  handleArchiveBoard,
   handleCreateBoard,
   handleListStacks,
   handleCreateStack,
@@ -48,6 +49,16 @@ export function registerDeckTools(server: McpServer): void {
       board_id: z.number().describe('The ID of the board to delete'),
     },
     async ({ board_id }) => handleDeleteBoard(board_id)
+  );
+
+  server.tool(
+    prefixToolName('deck_archive_board'),
+    'Archive or unarchive a Deck board. Archived boards are hidden from the main board list but preserved.',
+    {
+      board_id: z.number().describe('The ID of the board'),
+      archived: z.boolean().describe('true to archive, false to unarchive'),
+    },
+    async ({ board_id, archived }) => handleArchiveBoard(board_id, archived)
   );
 
   server.tool(

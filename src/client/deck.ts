@@ -29,6 +29,16 @@ export class DeckClient extends BaseNextcloudClient {
     return this.makeRequest<Board>({ method: 'DELETE', url: `${DECK_API}/boards/${boardId}` });
   }
 
+  async archiveBoard(boardId: number, archived: boolean): Promise<Board> {
+    // Board PUT requires title and color, so fetch first
+    const current = await this.getBoard(boardId);
+    return this.makeRequest<Board>({
+      method: 'PUT',
+      url: `${DECK_API}/boards/${boardId}`,
+      data: { title: current.title, color: current.color, archived },
+    });
+  }
+
   async createBoard(title: string, color: string): Promise<Board> {
     const board = await this.makeRequest<Board>({ method: 'POST', url: `${DECK_API}/boards`, data: { title, color } });
     // Auto-share with the AI Agents group so all members can see the board
